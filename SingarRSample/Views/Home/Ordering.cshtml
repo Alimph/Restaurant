@@ -1,0 +1,89 @@
+﻿@model SignalRSmple.Models.OrderModel
+
+<style>
+    .form-floating > label {
+        right: 0px !important;
+    }
+</style>
+
+<div class="row" dir="rtl">
+    <div class="col-md-4 form-floating">
+        <input class="form-control text-end" asp-for="CustomerName" placeholder="نام مشتری" />
+        <label for="CustomerName">نام مشتری</label>
+    </div>
+
+    <div class="col-md-4 form-floating">
+        <select class="form-control" asp-for="FoodId">
+            <option value="1">پیتزا</option>
+            <option value="2">کباب ترکی</option>
+            <option value="3">همبرگر</option>
+            <option value="4">هات داگ</option>
+        </select>
+        <label for="CustomerName">غذا</label>
+    </div>
+</div>
+<button class="btn btn-primary" onclick="SendOrder()">ارسال</button>
+
+<table class="table mt-5" dir="rtl">
+    <thead>
+        <tr>
+            <th>شماره</th>
+            <th>مشتری</th>
+            <th>نام غذا</th>
+            <th>عملیات</th>
+            <th>وضعیت</th>
+        </tr>
+    </thead>
+    <tbody id="Row-Order">
+    </tbody>
+</table>
+
+@section Scripts{ 
+    <script>
+        function SendOrder() {
+            connection.invoke("InsertOrder", $("#FoodId").val(), $("#CustomerName").val()).catch(function (err) {
+                console.log("Your Error Is:" + err);
+            });
+            $("#CustomerName").val(null)
+        }
+
+        connection.on("OrderReady", function (code) {
+            $("#status-" + code).html(`<span class="text-primary">حاضراست</span>`);
+            $("#btn-ready-" + code).html(null);
+        })
+
+        function OrderReady(code) {
+            connection.invoke("OrderReady", code.toString()).catch(function (err) {
+                console.log("Your Error Is:" + err);
+            });
+        }
+
+        connection.on("GetOrder", function (data) {
+            let foodName;
+
+            if (data.foodId == 1)
+                foodName = "پیتزا";
+
+            else if (data.foodId == 2)
+                foodName = "کباب ترکی";
+
+            else if (data.foodId == 3)
+                foodName = "همبرگر";
+
+            else
+                foodName = "هات داگ";
+
+            let templete = `
+                           <tr>
+                           <td>${data.code}</td>
+                           <td>${data.customerName}</td>
+                           <td>${foodName}</td>
+                           <td id="btn-ready-${data.code}"><button class="btn btn-primary" onclick="OrderReady(${data.code})">آماده شدن</button></td>
+                           <td id="status-${data.code}"><span class="text-warning">در حال آماده سازی سفارش</span></td>
+                           </tr>
+                           `
+            $("#Row-Order").append(templete);
+
+        });
+    </script>
+}
